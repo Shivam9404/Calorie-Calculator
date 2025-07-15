@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ResultCard from './ResultCard';
+import WeeklyChart from './WeeklyChart';
 
 function CalculatorForm() {
   const [age, setAge] = useState("");
@@ -18,6 +20,7 @@ function CalculatorForm() {
     const goal = data.get("goal");
     const exerciseDays = Number(data.get("exerciseDays"));
 
+    // BMR Calculation (Mifflin-St Jeor)
     const bmr =
       gender === "male"
         ? 10 * weight + 6.25 * height - 5 * age + 5
@@ -35,11 +38,26 @@ function CalculatorForm() {
     if (goal === "lose") tdee -= 500;
     else if (goal === "gain") tdee += 300;
 
-    const proteinCal = tdee * 0.3;
-    const carbsCal = tdee * 0.4;
-    const fatCal = tdee * 0.3;
+    // Protein per kg based on activity
+    const proteinFactor = {
+      sedentary: 0.8,
+      lightly: 1.0,
+      active: 1.3,
+      very: 1.6,
+    };
 
-    const proteinGram = (proteinCal / 4).toFixed(0);
+    const proteinGram = (weight * proteinFactor[activity]).toFixed(0);
+
+    // Calories from protein
+    const proteinCal = proteinGram * 4;
+
+    // Remaining calories after protein
+    const remainingCal = tdee - proteinCal;
+
+    // Split remaining calories: 50% carbs, 50% fats (adjustable)
+    const carbsCal = remainingCal * 0.5;
+    const fatCal = remainingCal * 0.5;
+
     const carbsGram = (carbsCal / 4).toFixed(0);
     const fatGram = (fatCal / 9).toFixed(0);
 
@@ -120,21 +138,12 @@ function CalculatorForm() {
         <button type="submit">Calculate</button>
       </form>
 
-      {/* Result display */}
+      {/* Result section */}
       {result && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Results</h3>
-          <p><strong>TDEE:</strong> {result.tdee} kcal/day</p>
-          <p><strong>Protein:</strong> {result.proteinGram} g</p>
-          <p><strong>Carbs:</strong> {result.carbsGram} g</p>
-          <p><strong>Fat:</strong> {result.fatGram} g</p>
-          <p><strong>Weekly Calories:</strong></p>
-          <ul>
-            {result.weekCalories.map((cal, i) => (
-              <li key={i}>Day {i + 1}: {cal} kcal</li>
-            ))}
-          </ul>
-        </div>
+        <>
+          <ResultCard result={result} />
+          <WeeklyChart weekCalories={result.weekCalories} />
+        </>
       )}
     </div>
   );
